@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SookKai - สุขกาย</title>
+    <style>
+        :root {
+            --primary: #2d6a4f;
+            --accent: #d08c60;
+            --bg: #f1f8f5;
+            --card: #FFFFFF;
+            --success: #40916c;
+            --info: #52b788;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Kanit', sans-serif;
+            background-color: var(--bg); margin: 0; padding: 0; color: #1b4332;
+            display: flex; justify-content: center; min-height: 100vh;
+        }
+        .app-container {
+            width: 100%; max-width: 480px; background: var(--card);
+            min-height: 100vh; box-shadow: 0 0 20px rgba(0,0,0,0.05);
+            display: flex; flex-direction: column; position: relative;
+        }
+
+        /* --- 1. SPLASH SCREEN (หน้าโหลด) --- */
+        #splash-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #2d6a4f, #1b4332);
+            z-index: 3000;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            color: white; transition: opacity 0.5s ease;
+        }
+        /* สร้างโลโก้ใบไม้ด้วย CSS/SVG ไม่ต้องใช้ไฟล์รูป */
+        .leaf-icon {
+            width: 100px; height: 100px; fill: white;
+            animation: float 3s ease-in-out infinite;
+            margin-bottom: 15px;
+            filter: drop-shadow(0 0 10px rgba(255,255,255,0.3));
+        }
+        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
+
+        /* --- 2. INTRO SCREEN (หน้ากฎเหล็ก) --- */
+        #intro-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.92);
+            z-index: 2000;
+            display: none; /* ซ่อนไว้ก่อน */
+            flex-direction: column; justify-content: center; align-items: center;
+            padding: 10px; box-sizing: border-box;
+            transition: opacity 0.5s ease;
+        }
+        .intro-container {
+            width: 100%; max-width: 400px; text-align: center;
+        }
+        .intro-img {
+            width: 100%; height: auto; border-radius: 10px;
+            box-shadow: 0 0 20px rgba(255,255,255,0.1);
+            margin-bottom: 20px;
+            border: 2px solid #555;
+        }
+        .start-btn {
+            background: var(--primary); color: white; border: none;
+            padding: 15px 40px; font-size: 1.2rem; border-radius: 50px;
+            cursor: pointer; font-weight: bold;
+            box-shadow: 0 0 15px rgba(45, 106, 79, 0.5);
+            animation: pulse-btn 2s infinite;
+        }
+        @keyframes pulse-btn { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
+        /* --- Main App Styles --- */
+        header {
+            padding: 25px 20px; text-align: center; 
+            background: linear-gradient(135deg, #2d6a4f, #40916c); color: white;
+            border-bottom-left-radius: 30px; border-bottom-right-radius: 30px;
+            box-shadow: 0 4px 15px rgba(45, 106, 79, 0.2); position: relative; z-index: 2;
+        }
+        h1 { margin: 0; font-size: 1.8rem; letter-spacing: 1px; }
+        .music-toggle {
+            position: absolute; top: 20px; right: 20px;
+            background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.4);
+            padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; cursor: pointer;
+            backdrop-filter: blur(5px);
+        }
+        .tracking-bar {
+            background: white; margin: 20px; padding: 15px 20px; border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03); display: flex; justify-content: space-between; align-items: center;
+            border: 1px solid #e8f5e9;
+        }
+        .streak-count { font-size: 1.2rem; font-weight: bold; color: var(--success); }
+        .streak-label { font-size: 0.8rem; color: #888; }
+        .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 0 20px; }
+        .menu-btn {
+            background: white; border: 1px solid #e8f5e9; border-radius: 18px; padding: 20px;
+            text-align: center; cursor: pointer; transition: all 0.2s ease; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .menu-btn:hover { border-color: var(--primary); transform: translateY(-3px); box-shadow: 0 8px 15px rgba(45, 106, 79, 0.1); }
+        .menu-btn span { font-size: 2.2rem; margin-bottom: 8px; }
+        .menu-btn h3 { font-weight: 500; color: #2d6a4f; margin: 0; font-size: 1rem; }
+        .screen { flex: 1; display: none; flex-direction: column; }
+        .screen.active { display: flex; }
+        .top-bar { padding: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .btn-exit {
+            background: #fff5f5; border: 1px solid #ffcccc; color: #e74c3c;
+            padding: 8px 16px; border-radius: 10px; font-weight: bold; font-size: 0.95rem; cursor: pointer;
+        }
+        .symptom-header {
+            background: #e8f5e9; color: var(--primary); padding: 8px 15px;
+            border-radius: 20px; font-size: 0.9rem; font-weight: bold; margin-bottom: 15px;
+            display: inline-block; align-self: center;
+        }
+        .content-area { padding: 0 25px; flex: 1; display: flex; flex-direction: column; align-items: center; }
+        .point-image {
+            width: 100%; height: 220px; background-color: white; border-radius: 20px;
+            margin-bottom: 20px; display: flex; align-items: center; justify-content: center;
+            overflow: hidden; border: 1px solid #e8f5e9; box-shadow: inset 0 0 10px rgba(0,0,0,0.02);
+        }
+        .point-image img { width: 100%; height: 100%; object-fit: contain; }
+        .instruction-box {
+            background: white; padding: 20px; border-radius: 15px; width: 100%; box-sizing: border-box;
+            margin-bottom: 15px; font-size: 0.95rem; line-height: 1.6;
+            border-left: 5px solid var(--accent); box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+        }
+        .timer-box { font-size: 3.5rem; font-weight: 800; color: var(--primary); margin: 10px 0; font-variant-numeric: tabular-nums; }
+        .action-area { padding: 25px; margin-top: auto; display: flex; flex-direction: column; gap: 12px; }
+        .row-btns { display: flex; gap: 12px; }
+        .btn { padding: 16px; border: none; border-radius: 14px; font-size: 1rem; font-weight: 600; cursor: pointer; flex: 1; transition: 0.2s; }
+        .btn-info { background: #e8f5e9; color: var(--primary); border: 1px solid var(--primary); }
+        .btn-primary { background: var(--primary); color: white; box-shadow: 0 4px 10px rgba(45, 106, 79, 0.3); }
+        .btn-secondary { background: #f1f3f5; color: #495057; }
+        .btn-success { background: var(--success); color: white; }
+        .speaking-anim { animation: pulse 1.5s infinite; background: #d3f9d8; }
+        
+        /* Modal */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 1000;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: white; width: 85%; max-width: 320px; padding: 30px;
+            border-radius: 25px; text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<div id="splash-screen">
+    <svg class="leaf-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M17,8C8,10,5.9,16.17,3.82,21.34L5.71,22l1-2.3A4.49,4.49,0,0,0,8,20C19,20,22,3,22,3,21,5,14,5.25,9,6.25S2,11.5,2,13.5a6.22,6.22,0,0,0,1.75,3.75C7,8,17,8,17,8Z"/>
+    </svg>
+    <h1 style="font-size: 2.8rem; margin-bottom: 5px;">SookKai</h1>
+    <p style="opacity: 0.9; font-size: 1.1rem;">สุขกาย... สบายตัว</p>
+</div>
+
+<div id="intro-screen" onclick="enterApp()">
+    <div class="intro-container">
+        <img src="intro.png" class="intro-img" alt="คู่มือ 3 กฎเหล็ก" 
+             onerror="this.src='https://placehold.co/600x400?text=3+Rules+Image+Error';">
+        
+        <br>
+        <button class="start-btn">เข้าใช้งาน</button>
+        <p style="color:#ccc; margin-top:10px; font-size:0.9rem;">(แตะที่หน้าจอเพื่อเริ่ม)</p>
+    </div>
+</div>
+
+<audio id="bg-music" loop preload="auto">
+    <source src="music.mp3" type="audio/mpeg">
+    <source src="https://archive.org/download/awaken_202001/Awaken.mp3" type="audio/mpeg">
+</audio>
+
+<div class="app-container">
+    <header>
+        <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+             <svg style="width:24px; height:24px; fill:white;" viewBox="0 0 24 24"><path d="M17,8C8,10,5.9,16.17,3.82,21.34L5.71,22l1-2.3A4.49,4.49,0,0,0,8,20C19,20,22,3,22,3,21,5,14,5.25,9,6.25S2,11.5,2,13.5a6.22,6.22,0,0,0,1.75,3.75C7,8,17,8,17,8Z"/></svg>
+             <h1>SookKai</h1>
+        </div>
+        <p style="font-size: 0.9rem; opacity: 0.9; margin-top: 5px;">สุขกาย... สบายตัว</p>
+        <button class="music-toggle" onclick="toggleMusic()" id="music-btn">🔇 ปิดเพลง</button>
+    </header>
+
+    <div id="home-screen" class="screen active">
+        <div class="tracking-bar">
+            <div>
+                <div class="streak-label">ดูแลตัวเองต่อเนื่อง</div>
+                <div class="streak-count" id="streak-display">0 วัน 🌿</div>
+            </div>
+            <div style="text-align:right;">
+                <div class="streak-label">วันนี้</div>
+                <div id="today-status">⚪ ยังไม่ได้ทำ</div>
+            </div>
+        </div>
+        <div style="padding: 0 25px; margin-bottom: 15px; color:#2d6a4f; font-weight:600;">เลือกอาการที่เป็น:</div>
+        <div class="menu-grid" id="symptom-list"></div>
+    </div>
+
+    <div id="session-screen" class="screen">
+        <div class="top-bar">
+            <button onclick="confirmExit()" class="btn-exit">✕ ออก</button>
+            <span id="step-indicator" style="color:#888; font-size:0.9rem;">Step 1/3</span>
+        </div>
+        
+        <div class="content-area">
+            <div id="current-symptom-display" class="symptom-header">...</div>
+
+            <h2 id="point-name" style="margin: 0 0 10px; font-size: 1.4rem; text-align:center; color: var(--primary);">ชื่อจุด</h2>
+            <div class="point-image" id="point-img-container"></div>
+            <div class="instruction-box">
+                <div style="font-weight:bold; color:var(--primary); margin-bottom:5px;">วิธีนวด:</div>
+                <span id="technique-text" style="color:#444;">...</span>
+                <div id="caution-box" style="margin-top:10px; color:#c0392b; font-weight:bold; background:#fff5f5; padding:8px; border-radius:8px; display:none; font-size:0.9rem;"></div>
+            </div>
+            <div class="timer-box" id="timer">00:00</div>
+        </div>
+        
+        <div class="action-area">
+            <button class="btn btn-info" onclick="playInstruction()" id="listen-btn">🗣️ ฟังคำแนะนำ</button>
+            <div class="row-btns">
+                <button class="btn btn-primary" onclick="toggleTimer()" id="timer-btn">▶ เริ่มนวด</button>
+                <button class="btn btn-secondary" onclick="nextPoint()" id="next-btn">ข้าม ❯</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- Splash & Intro Logic ---
+    window.onload = function() {
+        // 1. โชว์หน้า Splash 2.5 วินาที แล้วตัดไปหน้า Intro
+        setTimeout(() => {
+            const splash = document.getElementById('splash-screen');
+            splash.style.opacity = '0';
+            setTimeout(() => {
+                splash.style.display = 'none';
+                // เปิดหน้า Intro
+                document.getElementById('intro-screen').style.display = 'flex';
+            }, 500);
+        }, 2500);
+
+        // โหลด Tracking Data
+        loadTracking();
+        initApp();
+    };
+
+    function enterApp() {
+        const intro = document.getElementById('intro-screen');
+        intro.style.opacity = '0';
+        setTimeout(() => {
+            intro.style.display = 'none';
+        }, 500);
+    }
+
+    // --- Database (11 จุด) ---
+    const database = [
+        { id: "GV20", name: "จุดไป่หุ้ย (กลางศีรษะ)", symptoms: ["นอนไม่หลับ", "เครียด", "ปวดหัว"], duration: 60, caution: "กดเบาๆ", technique: "ใช้นิ้วกลางกดคลึงเบาๆ ที่จุดกึ่งกลางกระหม่อม", script: "ใช้นิ้วกลางจากยอดหูทั้งสองข้าง ลากขึ้นไปบรรจบกันที่กลางศีรษะ... นั่นคือจุดไป่หุ้ย... กดคลึงเบาๆ... ผ่อนคลายสมอง..." },
+        { id: "ANMIAN_L", name: "จุดอันเหมียน (หลังหูซ้าย)", symptoms: ["นอนไม่หลับ", "หลับไม่สนิท"], duration: 60, caution: "-", technique: "กดที่รอยบุ๋มหลังใบหู ตรงฐานกะโหลก", script: "เอียงคอเล็กน้อย... ใช้นิ้วชี้คลำหาจุดบุ๋มที่หลังใบหูซ้าย... กดคลึงเบาๆ... จุดนี้คือจุดหลับสบาย..." },
+        { id: "ANMIAN_R", name: "จุดอันเหมียน (หลังหูขวา)", symptoms: ["นอนไม่หลับ", "หลับไม่สนิท"], duration: 60, caution: "-", technique: "สลับข้าง: กดรอยบุ๋มหลังใบหูขวา", script: "สลับข้างครับ... ทำเหมือนเดิมที่หลังใบหูขวา... กดคลึงเบาๆ... ปล่อยให้ร่างกายผ่อนคลายลง..." },
+        { id: "HT7_L", name: "จุดเสินเหมิน (ข้อมือซ้าย)", symptoms: ["นอนไม่หลับ", "เครียด", "ใจสั่น"], duration: 60, caution: "-", technique: "กดที่รอยพับข้อมือ ฝั่งนิ้วก้อย", script: "หงายฝ่ามือซ้าย... ใช้นิ้วหัวแม่มือกดลงไปในร่องเล็กๆ ฝั่งนิ้วก้อย... คลึงเบาๆ... ช่วยให้จิตใจสงบลง..." },
+        { id: "HT7_R", name: "จุดเสินเหมิน (ข้อมือขวา)", symptoms: ["นอนไม่หลับ", "เครียด", "ใจสั่น"], duration: 60, caution: "-", technique: "สลับข้าง: กดที่รอยพับข้อมือขวา ฝั่งนิ้วก้อย", script: "สลับมาที่ข้อมือขวาครับ... กดจุดเดิมฝั่งนิ้วก้อย... หายใจเข้าลึกๆ... เตรียมพร้อมสำหรับการพักผ่อน..." },
+
+        { id: "LI4_L", name: "1. จุดเหอกู่ (มือซ้าย)", symptoms: ["ปวดหัว", "เครียด", "ปวดฟัน"], duration: 60, caution: "คนท้อง ห้ามกด", technique: "กดง่ามนิ้วซ้าย ดันเข้าหากระดูกนิ้วชี้ ให้ตื้อๆ", script: "ยกมือซ้ายขึ้นมา... ใช้นิ้วโป้งขวากดที่ง่ามนิ้ว... ดันเข้าหากระดูกนิ้วชี้... หายใจออกยาวๆ..." },
+        { id: "LI4_R", name: "2. จุดเหอกู่ (มือขวา)", symptoms: ["ปวดหัว", "เครียด", "ปวดฟัน"], duration: 60, caution: "คนท้อง ห้ามกด", technique: "สลับข้าง: กดง่ามนิ้วขวา ดันเข้าหากระดูก", script: "สลับข้างครับ... ใช้นิ้วโป้งซ้ายกดที่ง่ามนิ้วขวา... ดันเข้าหากระดูก... ผ่อนคลายหัวไหล่..." },
+        { id: "GB20", name: "3. จุดเฟิงฉือ (ท้ายทอย)", symptoms: ["ปวดหัว", "ปวดคอ", "ไมเกรน"], duration: 60, caution: "ระวังกระดูกคอ", technique: "นิ้วโป้งกดใต้กะโหลก แล้วงัดขึ้นไปทางตา", script: "ประสานมือที่ท้ายทอย... ใช้นิ้วโป้งกดรอยบุ๋มใต้กะโหลก... งัดขึ้นไปทางดวงตา... ให้โล่งสบาย..." },
+        { id: "GB21", name: "1. จุดเจียนจิ่ง (บ่า)", symptoms: ["ปวดคอ", "ปวดไหล่", "ออฟฟิศซินโดรม"], duration: 45, caution: "คนท้อง ห้ามกด", technique: "บีบยกกล้ามเนื้อบ่าขึ้น แล้วคลึงเบาๆ", script: "ใช้นิ้วบีบที่กลางบ่า... หาจุดที่ตึงที่สุด... บีบและยกกล้ามเนื้อขึ้นมา... คลึงเบาๆ..." },
+        { id: "EX-HN3", name: "จุดอิ้นถาง (หว่างคิ้ว)", symptoms: ["นอนไม่หลับ", "เครียด"], duration: 90, caution: "กดเบาๆ", technique: "ใช้นิ้วกลางลูบจากหว่างคิ้วขึ้นไปหน้าผาก", script: "หลับตาลง... ใช้นิ้วกลางแตะเบาๆ ที่หว่างคิ้ว... ลูบขึ้นไปทางหน้าผากช้าๆ... ปล่อยวางความคิด..." },
+        { id: "LR3", name: "จุดไท่ชง (หลังเท้า)", symptoms: ["นอนไม่หลับ", "เครียด", "ดีท็อกซ์ตับ"], duration: 60, caution: "-", technique: "กดร่องกระดูกนิ้วโป้งและชี้เท้า ไล่ขึ้นมาจนติดกระดูก", script: "ที่หลังเท้า... ไล่นิ้วขึ้นมาจากง่ามนิ้วโป้ง... จนชนกระดูก... กดลงไป... ระบายความร้อนออกจากร่างกาย..." },
+        { id: "BL40", name: "จุดเหว่ยจง (พับเข่า)", symptoms: ["ปวดหลัง", "ปวดเอว"], duration: 60, caution: "-", technique: "กดกึ่งกลางข้อพับเข่าด้านหลัง", script: "งอเข่าเล็กน้อย... ใช้นิ้วกดที่กึ่งกลางข้อพับเข่าด้านหลัง... ส่งความรู้สึกผ่อนคลายไปที่หลังเอว..." },
+        { id: "PC6", name: "จุดเน่ย-กวน (ข้อมือใน)", symptoms: ["คลื่นไส้", "เมารถ", "กรดไหลย้อน", "นอนไม่หลับ"], duration: 120, caution: "-", technique: "ห่างจากรอยพับข้อมือ 3 นิ้ว กดระหว่างเส้นเอ็น", script: "วาง 3 นิ้วทาบจากข้อมือ... กดลงไปตรงกลางระหว่างเส้นเอ็น... หายใจเข้าลึกๆ..." },
+        { id: "ST36", name: "จุดจู๋ซานหลี่ (หน้าแข้ง)", symptoms: ["ท้องอืด", "อ่อนเพลีย", "ปวดเข่า"], duration: 60, caution: "-", technique: "ต่ำกว่าเข่า 4 นิ้ว เยื้องออกด้านนอก", script: "วางมือทาบลงที่ใต้เข่า... จุดอยู่ที่ปลายนิ้วก้อยด้านนอก... กดลงไปแรงๆ... เติมพลังให้ร่างกาย..." },
+        { id: "SP6", name: "จุดซานยินเจียว (ข้อเท้า)", symptoms: ["ปวดประจำเดือน", "บวมน้ำ"], duration: 60, caution: "คนท้อง ห้ามกด", technique: "เหนือตาตุ่มใน 4 นิ้ว ชิดขอบกระดูก", script: "วาง 4 นิ้วเหนือตาตุ่มด้านใน... กดชิดขอบกระดูกหน้าแข้ง... คลึงเบาๆ... ลดอาการปวดเกร็ง..." },
+        { id: "LI20", name: "จุดอิ๋งเซียง (ข้างจมูก)", symptoms: ["ภูมิแพ้", "คัดจมูก"], duration: 45, caution: "-", technique: "กดและถูขึ้นลงข้างปีกจมูกเร็วๆ", script: "ใช้นิ้วชี้แตะที่ข้างปีกจมูก... กดและถูขึ้นลงเร็วๆ... ให้รู้สึกอุ่นร้อน... จมูกจะโล่งขึ้น..." }
+    ];
+
+    // --- Core Logic ---
+    let currentQueue = [];
+    let currentIndex = 0;
+    let timerInterval = null;
+    let timeLeft = 0;
+    let isMusicPlaying = false;
+    let isTimerRunning = false;
+    let synth = null;
+    let voices = [];
+
+    // Init Speech
+    try {
+        if ('speechSynthesis' in window) {
+            synth = window.speechSynthesis;
+            const loadVoices = () => { voices = synth.getVoices(); };
+            loadVoices();
+            if (synth.onvoiceschanged !== undefined) synth.onvoiceschanged = loadVoices;
+        }
+    } catch (e) { console.log("Speech not supported"); }
+
+    const audio = document.getElementById('bg-music');
+    audio.volume = 0.4;
+    audio.onerror = function() {
+        console.log("Audio Load Error - Silent Fail");
+        document.getElementById('music-btn').innerText = "🔕 เพลงไม่ได้";
+    };
+
+    function loadTracking() {
+        try {
+            const lastDate = localStorage.getItem('lastDate');
+            let streak = parseInt(localStorage.getItem('streak') || '0');
+            const today = new Date().toDateString();
+            if (lastDate === today) {
+                document.getElementById('today-status').innerHTML = "🟢 เรียบร้อย";
+                document.getElementById('today-status').style.color = "var(--success)";
+            }
+            document.getElementById('streak-display').innerText = `${streak} วัน 🌿`;
+        } catch (e) {}
+    }
+
+    function completeTracking() {
+        try {
+            const today = new Date().toDateString();
+            const lastDate = localStorage.getItem('lastDate');
+            let streak = parseInt(localStorage.getItem('streak') || '0');
+            if (lastDate !== today) {
+                streak++;
+                localStorage.setItem('streak', streak);
+                localStorage.setItem('lastDate', today);
+                document.getElementById('today-status').innerHTML = "🟢 เรียบร้อย";
+                document.getElementById('today-status').style.color = "var(--success)";
+                document.getElementById('streak-display').innerText = `${streak} วัน 🌿`;
+            }
+        } catch (e) {}
+    }
+
+    function initApp() {
+        const symptomSet = new Set();
+        database.forEach(p => p.symptoms.forEach(s => symptomSet.add(s)));
+        const container = document.getElementById('symptom-list');
+        const priority = ["ปวดหัว", "ปวดคอ", "ออฟฟิศซินโดรม", "นอนไม่หลับ", "ปวดหลัง", "ปวดประจำเดือน"];
+        const sortedSymptoms = Array.from(symptomSet).sort((a, b) => {
+            const idxA = priority.indexOf(a); const idxB = priority.indexOf(b);
+            if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+            if (idxA !== -1) return -1; if (idxB !== -1) return 1;
+            return a.localeCompare(b);
+        });
+        const icons = { 
+            "ปวดหัว": "🤯", "ปวดคอ": "🦒", "ออฟฟิศซินโดรม": "💻", 
+            "นอนไม่หลับ": "😴", "ปวดหลัง": "🪵", "ปวดประจำเดือน": "🩸",
+            "เครียด": "😫", "คลื่นไส้": "🤢", "ภูมิแพ้": "🤧" 
+        };
+        sortedSymptoms.forEach(symptom => {
+            const btn = document.createElement('div');
+            btn.className = 'menu-btn';
+            btn.innerHTML = `<span>${icons[symptom] || '💊'}</span><h3>${symptom}</h3>`;
+            btn.onclick = () => startSession(symptom);
+            container.appendChild(btn);
+        });
+    }
+
+    function startSession(symptom) {
+        currentQueue = database.filter(p => p.symptoms.includes(symptom));
+        if(currentQueue.length === 0) return;
+        currentIndex = 0;
+        document.getElementById('home-screen').classList.remove('active');
+        document.getElementById('session-screen').classList.add('active');
+        document.getElementById('current-symptom-display').innerText = `อาการ: ${symptom}`;
+        loadPoint(currentIndex);
+    }
+
+    function loadPoint(index) {
+        clearInterval(timerInterval);
+        isTimerRunning = false;
+        if(synth) synth.cancel();
+
+        const point = currentQueue[index];
+        document.getElementById('point-name').innerText = point.name;
+        document.getElementById('technique-text').innerText = point.technique;
+        
+        const cautionBox = document.getElementById('caution-box');
+        if (point.caution && point.caution !== "-") {
+            cautionBox.innerText = "⚠️ " + point.caution;
+            cautionBox.style.display = "block";
+        } else { cautionBox.style.display = "none"; }
+
+        document.getElementById('step-indicator').innerText = `Step ${index + 1}/${currentQueue.length}`;
+        const imgName = point.id.split('_')[0];
+        // ระบบค้นหารูป (JPG -> PNG -> Placeholder)
+        document.getElementById('point-img-container').innerHTML = `
+            <img src="${imgName}.png" 
+                 style="width:100%; height:100%; object-fit:contain;"
+                 onerror="if (this.src.endsWith('.png')) { this.src='${imgName}.png'; } else { this.src='https://placehold.co/400x300?text=No+Image'; }">
+        `;
+
+        document.getElementById('listen-btn').innerText = "🗣️ ฟังคำแนะนำ";
+        document.getElementById('listen-btn').classList.remove('speaking-anim');
+        document.getElementById('timer-btn').innerText = "▶ เริ่มนวด";
+        document.getElementById('timer-btn').className = "btn btn-primary";
+        document.getElementById('timer-btn').disabled = false;
+
+        const nextBtn = document.getElementById('next-btn');
+        if (index === currentQueue.length - 1) {
+            nextBtn.innerText = "✅ จบ (บันทึกผล)";
+            nextBtn.className = "btn btn-success";
+        } else {
+            nextBtn.innerText = "ข้าม ❯";
+            nextBtn.className = "btn btn-secondary";
+        }
+        timeLeft = point.duration;
+        updateTimerDisplay();
+    }
+
+    function playInstruction() {
+        if (!synth) { alert("อุปกรณ์ไม่รองรับเสียงพูด"); return; }
+        if (synth.speaking) {
+            synth.cancel();
+            document.getElementById('listen-btn').classList.remove('speaking-anim');
+            document.getElementById('listen-btn').innerText = "🗣️ ฟังคำแนะนำ";
+            return;
+        }
+        const point = currentQueue[currentIndex];
+        const utterance = new SpeechSynthesisUtterance(point.script);
+        const thaiVoice = voices.find(v => v.lang.includes('th'));
+        if (thaiVoice) utterance.voice = thaiVoice;
+        utterance.lang = 'th-TH'; utterance.rate = 1.0;
+        utterance.onstart = () => {
+            document.getElementById('listen-btn').classList.add('speaking-anim');
+            document.getElementById('listen-btn').innerText = "🔊 กำลังพูด...";
+        };
+        utterance.onend = () => {
+            document.getElementById('listen-btn').classList.remove('speaking-anim');
+            document.getElementById('listen-btn').innerText = "🗣️ ฟังอีกครั้ง";
+        };
+        synth.speak(utterance);
+    }
+
+    function toggleTimer() {
+        if(synth) synth.cancel(); 
+        document.getElementById('listen-btn').classList.remove('speaking-anim');
+        document.getElementById('listen-btn').innerText = "🗣️ ฟังคำแนะนำ";
+
+        const btn = document.getElementById('timer-btn');
+        if (!isTimerRunning) {
+            isTimerRunning = true;
+            btn.innerText = "⏸ พัก"; btn.className = "btn btn-info";
+            
+            if(isMusicPlaying) {
+                document.getElementById('bg-music').play().catch(() => {});
+            }
+            
+            timerInterval = setInterval(() => {
+                if (timeLeft > 0) { timeLeft--; updateTimerDisplay(); } else { finishStep(); }
+            }, 1000);
+        } else {
+            isTimerRunning = false;
+            btn.innerText = "▶ ต่อ"; btn.className = "btn btn-primary";
+            clearInterval(timerInterval);
+        }
+    }
+
+    function finishStep() {
+        clearInterval(timerInterval);
+        isTimerRunning = false;
+        if(synth) {
+            const beep = new SpeechSynthesisUtterance("หมดเวลาครับ");
+            beep.lang = 'th-TH'; synth.speak(beep);
+        }
+        document.getElementById('timer-btn').innerText = "✅ ครบเวลา";
+        document.getElementById('timer-btn').className = "btn btn-success";
+        document.getElementById('timer-btn').disabled = true;
+        if (currentIndex === currentQueue.length - 1) { completeTracking(); }
+    }
+
+    function nextPoint() {
+        clearInterval(timerInterval);
+        isTimerRunning = false;
+        if(synth) synth.cancel();
+        if (currentIndex < currentQueue.length - 1) {
+            currentIndex++; loadPoint(currentIndex);
+        } else {
+            completeTracking(); confirmExit();
+        }
+    }
+
+    function updateTimerDisplay() {
+        const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+        const s = (timeLeft % 60).toString().padStart(2, '0');
+        document.getElementById('timer').innerText = `${m}:${s}`;
+    }
+
+    function toggleMusic() {
+        const audio = document.getElementById('bg-music');
+        const btn = document.getElementById('music-btn');
+        if (isMusicPlaying) {
+            audio.pause(); isMusicPlaying = false;
+            btn.innerText = "🔇 ปิดเพลง"; 
+            btn.style.background = "rgba(255,255,255,0.2)";
+        } else {
+            const playPromise = audio.play();
+            if (playPromise !== undefined) {
+                playPromise.then(_ => {
+                    isMusicPlaying = true;
+                    btn.innerText = "🔊 เปิดเพลงแล้ว"; 
+                    btn.style.background = "rgba(64, 145, 108, 0.6)";
+                })
+                .catch(error => {
+                    btn.innerText = "⚠️ เล่นไม่ได้";
+                });
+            }
+        }
+    }
+
+    function confirmExit() {
+        if(synth) synth.cancel();
+        clearInterval(timerInterval);
+        document.getElementById('bg-music').pause();
+        isMusicPlaying = false; 
+        document.getElementById('music-btn').innerText = "🔇 ปิดเพลง";
+        document.getElementById('music-btn').style.background = "rgba(255,255,255,0.2)";
+        document.getElementById('session-screen').classList.remove('active');
+        document.getElementById('home-screen').classList.add('active');
+        loadTracking();
+    }
+</script>
+
+</body>
+</html>
